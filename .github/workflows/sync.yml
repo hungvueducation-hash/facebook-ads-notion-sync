@@ -1,0 +1,60 @@
+name: Sync Facebook Ads to Notion
+
+# TRIGGER - KÍCH HOẠT KHI NÀO
+on:
+  # 1. Chạy theo schedule (tự động)
+  schedule:
+    # Cron expression - chạy mỗi ngày lúc 9:00 AM UTC
+    # 9:00 UTC = 16:00 Việt Nam (UTC+7)
+    - cron: "0 9 * * *"
+
+  # 2. Chạy thủ công (manual trigger)
+  workflow_dispatch:
+
+# JOB - CÔNG VIỆC CẦN LÀM
+jobs:
+  sync:
+    # Chạy trên Ubuntu (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download code từ repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Python 3.9
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 4: Chạy script
+      - name: Run sync script
+        env:
+          # Load tất cả environment variables từ secrets
+          FACEBOOK_ACCESS_TOKEN: ${{ secrets.FACEBOOK_ACCESS_TOKEN }}
+          FACEBOOK_AD_ACCOUNT_IDS: ${{ secrets.FACEBOOK_AD_ACCOUNT_IDS }}
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_DATABASE_ID_DAILY: ${{ secrets.NOTION_DATABASE_ID_DAILY }}
+          START_DATE: ${{ secrets.START_DATE }}
+          END_DATE: ${{ secrets.END_DATE }}
+          FACEBOOK_FIELDS: ${{ secrets.FACEBOOK_FIELDS }}
+          NOTION_FIELD_MAPPINGS: ${{ secrets.NOTION_FIELD_MAPPINGS }}
+        run: python sync_facebook_ads_daily_breakdown.py
+
+      # Step 5: Notify nếu thành công
+      - name: Success notification
+        if: success()
+        run: echo "✅ Sync completed successfully!"
+
+      # Step 6: Notify nếu lỗi
+      - name: Error notification
+        if: failure()
+        run: echo "❌ Sync failed!"
