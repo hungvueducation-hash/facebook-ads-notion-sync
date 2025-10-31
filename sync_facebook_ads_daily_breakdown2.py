@@ -1,5 +1,5 @@
-# sync_facebook_ads_daily_breakdown_NO_STEP1.py
-# ✅ SIMPLIFIED: Bỏ Bước 1 - Chỉ tạo mới (không kiểm tra existing)
+# sync_facebook_ads_daily_breakdown.py
+# ✅ UPDATED: Load từ 2 files (.env + config.env)
 
 import requests
 import os
@@ -7,7 +7,13 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import time
 
-load_dotenv()
+# ========== LOAD CONFIGURATION FILES ==========
+
+# Load .env (chứa secrets: FACEBOOK_ACCESS_TOKEN, NOTION_API_KEY)
+load_dotenv(".env")
+
+# Load .env.config (chứa các config khác)
+load_dotenv(".env.config")
 
 # ========== CONFIGURATION ==========
 
@@ -29,7 +35,7 @@ FACEBOOK_FIELDS = [f.strip() for f in FACEBOOK_FIELDS_STR.split(',') if f.strip(
 NOTION_FIELD_MAPPINGS_STR = os.getenv('NOTION_FIELD_MAPPINGS', '')
 
 def parse_field_mappings():
-    """Parse Notion field mappings từ .env"""
+    """Parse Notion field mappings từ config.env"""
     mappings = {}
     
     if NOTION_FIELD_MAPPINGS_STR:
@@ -54,7 +60,7 @@ def parse_field_mappings():
 NOTION_FIELD_MAPPINGS = parse_field_mappings()
 
 print("\n" + "=" * 70)
-print("🚀 FACEBOOK ADS DAILY BREAKDOWN → NOTION (NO STEP 1)")
+print("🚀 FACEBOOK ADS DAILY BREAKDOWN → NOTION")
 print("=" * 70)
 print(f"\n📊 Configuration:")
 print(f"   Ad Accounts: {len(FACEBOOK_AD_ACCOUNT_IDS)} accounts")
@@ -63,14 +69,12 @@ print(f"   Facebook Fields: {', '.join(FACEBOOK_FIELDS)}")
 print(f"   Notion Fields: {', '.join(NOTION_FIELD_MAPPINGS.values())}")
 print(f"   Notion DB: {NOTION_DATABASE_ID_DAILY[:20]}...")
 
-
 def get_notion_headers():
     return {
         'Authorization': f'Bearer {NOTION_API_KEY}',
         'Content-Type': 'application/json',
         'Notion-Version': '2025-09-03'
     }
-
 
 # ========== GET FACEBOOK DAILY DATA ==========
 
@@ -117,7 +121,6 @@ def get_facebook_daily_data_multi():
     print(f"\n✅ Tổng lấy được: {len(all_daily_data)} daily records từ {len(FACEBOOK_AD_ACCOUNT_IDS)} accounts")
     return all_daily_data
 
-
 # ========== BUILD NOTION PROPERTIES ==========
 
 def build_notion_properties_daily(record):
@@ -162,7 +165,6 @@ def build_notion_properties_daily(record):
     
     return properties
 
-
 # ========== CREATE PAGE ==========
 
 def create_page_daily(record):
@@ -183,33 +185,30 @@ def create_page_daily(record):
         print(f"  ⚠️ Lỗi: {str(e)[:60]}")
         return False
 
-
 # ========== MAIN ==========
 
 def main():
     
     # Validation
     if not FACEBOOK_AD_ACCOUNT_IDS:
-        print("\n❌ Không có Ad Account IDs trong .env!")
+        print("\n❌ Không có Ad Account IDs trong config.env!")
         return
     
     if not NOTION_DATABASE_ID_DAILY:
-        print("\n❌ Không có NOTION_DATABASE_ID_DAILY trong .env!")
+        print("\n❌ Không có NOTION_DATABASE_ID_DAILY trong config.env!")
         return
     
     if not all([FACEBOOK_ACCESS_TOKEN, NOTION_API_KEY]):
-        print("\n❌ Credentials không đầy đủ!")
+        print("\n❌ Credentials không đầy đủ trong .env!")
         return
     
-    # ✅ BỎ BƯỚC 1: get_existing_daily_records() - Không cần kiểm tra existing
-    
-    # Bước 2: Get Facebook daily data
+    # Bước 1: Get Facebook daily data
     facebook_daily_data = get_facebook_daily_data_multi()
     if not facebook_daily_data:
         print("\n⚠️ Không lấy được daily data từ Facebook")
         return
     
-    # ✅ Bước 2 (Simplified): Tạo daily records - Chỉ tạo mới, không cập nhật
+    # Bước 2: Tạo daily records
     print("\n🔄 Bước 2: Tạo daily records...")
     print("-" * 70)
     
@@ -234,7 +233,6 @@ def main():
     print(f"✨ Tạo mới: {created}")
     print(f"📊 Tổng: {created}")
     print("=" * 70 + "\n")
-
 
 if __name__ == "__main__":
     try:
